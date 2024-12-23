@@ -10,16 +10,31 @@ import org.rusherhack.client.api.feature.module.ModuleCategory;
 import org.rusherhack.client.api.feature.module.ToggleableModule;
 import org.rusherhack.client.api.utils.ChatUtils;
 import org.rusherhack.core.event.subscribe.Subscribe;
+import org.rusherhack.core.setting.BooleanSetting;
 
 public class ElytraSwapModule extends ToggleableModule {
 
+    private final BooleanSetting disableInInventory = new BooleanSetting("Disable in inventory", "Prevents Elytra swaps while in inventory", true);
+    private final BooleanSetting disableWhileFlying = new BooleanSetting("Disable while flying", "Prevents Elytra swaps while flying", true);
+
     public ElytraSwapModule() {
-        super("ElytraSwap", "Swaps out fully repaired Elytra with a less-than-full one", ModuleCategory.MOVEMENT);
+        super("ElytraSwap", "Swaps out fully repaired Elytra with a less-than-full one", ModuleCategory.PLAYER);
+        this.registerSettings(disableInInventory);
+        this.registerSettings(disableWhileFlying);
     }
 
     @Subscribe
     private void onUpdate(EventUpdate event) {
         if (mc.player == null || mc.level == null) {
+            return;
+        }
+
+        // Check if the player is in their inventory and the setting is enabled
+        if (disableInInventory.getValue() && mc.screen != null) {
+            return;
+        }
+
+        if (disableWhileFlying.getValue() && mc.player.isFallFlying()) {
             return;
         }
 
@@ -57,7 +72,9 @@ public class ElytraSwapModule extends ToggleableModule {
 
         if (damagedElytraSlot == -1) {
             // No damaged Elytra found
-            ChatUtils.print("No damaged Elytra found in inventory.");
+            ChatUtils.print("No damaged Elytra found in inventory");
+            ChatUtils.print("Disabling Elytra Swap for now.");
+            this.toggle(); // Disable the module
             return;
         }
 
